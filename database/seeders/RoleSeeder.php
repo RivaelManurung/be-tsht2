@@ -18,8 +18,11 @@ class RoleSeeder extends Seeder
         $admin = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'api']);
         $operator = Role::firstOrCreate(['name' => 'operator', 'guard_name' => 'api']);
 
-        // permission untuk superadmin (bisa semua)
-        $superadmin->givePermissionTo(Permission::pluck('name')->toArray());
+        // Superadmin: dapat semua permission KECUALI create_transaction
+        $excludedPermissions = ['create_transaction'];
+        $permissions = Permission::whereNotIn('name', $excludedPermissions)->pluck('name')->toArray();
+        $superadmin->syncPermissions($permissions);
+
 
         // permission untuk admin
         $admin->givePermissionTo([
