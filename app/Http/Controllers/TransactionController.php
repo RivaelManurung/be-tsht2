@@ -78,5 +78,4 @@ class TransactionController extends Controller
 
         return response()->json($result, 200); // Status true mengembalikan 200
     }
-
 }
