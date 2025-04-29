@@ -22,6 +22,12 @@ class AuthRepository
         return $user->getAllPermissions()->pluck('name');
     }
 
+    public function findUserByName(string $name): ?User
+{
+    return User::where('name', $name)->first();
+}
+
+
     public function getUserRoles(User $user): \Illuminate\Support\Collection
     {
         return $user->getRoleNames();
