@@ -21,10 +21,11 @@ class BarangService
         $this->barangRepository = $barangRepository;
     }
 
-    public function getAllBarang($userId = null, $isSuperadmin = false)
+    public function getAllBarang($userId = null, $isOperator = false)
     {
-        return $this->barangRepository->getAll($userId, $isSuperadmin);
+        return $this->barangRepository->getAll($userId, $isOperator);
     }
+
 
     public function getBarangById($id)
     {

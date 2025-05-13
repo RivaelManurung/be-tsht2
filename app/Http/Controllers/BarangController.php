@@ -33,14 +33,14 @@ class BarangController extends Controller implements HasMiddleware
     {
         $user = Auth::user();
 
-
-        $isSuperadmin = $user->hasRole('superadmin');
+        $isOperator = $user->hasRole('operator');
         $userId = $user->id;
 
-        $barangs = $this->barangService->getAllBarang($userId, $isSuperadmin);
+        $barangs = $this->barangService->getAllBarang($userId, $isOperator);
 
         return BarangResource::collection($barangs);
     }
+
 
     public function store(Request $request)
     {
