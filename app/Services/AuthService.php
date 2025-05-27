@@ -16,48 +16,50 @@ class AuthService
     }
 
     public function login(array $credentials): array
-{
-    $user = $this->authRepository->findUserByName($credentials['name']);
+    {
+        // Find user by name instead of email
+        $user = $this->authRepository->findUserByName($credentials['name']);
 
-    if (!$user) {
+        if (!$user) {
+            return [
+                'response_code' => 401,
+                'status' => 'error',
+                'message' => 'Name not found',
+            ];
+        }
+
+        if (!Hash::check($credentials['password'], $user->password)) {
+            return [
+                'response_code' => 401,
+                'status' => 'error',
+                'message' => 'Incorrect password',
+            ];
+        }
+
+        $accessToken = $this->authRepository->createToken($user);
+        $permissions = $this->authRepository->getUserPermissions($user);
+        $roles = $this->authRepository->getUserRoles($user);
+
         return [
-            'response_code' => 401,
-            'status' => 'error',
-            'message' => 'Username tidak ditemukan',
-        ];
-    }
-
-    if (!Hash::check($credentials['password'], $user->password)) {
-        return [
-            'response_code' => 401,
-            'status' => 'error',
-            'message' => 'Password salah',
-        ];
-    }
-
-    $accessToken = $this->authRepository->createToken($user);
-    $permissions = $this->authRepository->getUserPermissions($user);
-    $roles = $this->authRepository->getUserRoles($user);
-
-    return [
-        'response_code' => 200,
-        'status' => 'success',
-        'message' => 'Login berhasil',
-        'data' => [
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'phone_number' => $user->phone_number,
-                'avatar' => $user->avatar,
-                'role_id' => $user->role_id,
+            'response_code' => 200,
+            'status' => 'success',
+            'message' => 'Login successful',
+            'data' => [
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email, // You can still return email if needed
+                    'phone_number' => $user->phone_number,
+                    'avatar' => $user->avatar,
+                    'role_id' => $user->role_id,
+                ],
+                'token' => $accessToken,
+                'permissions' => $permissions,
+                'roles' => $roles,
             ],
-            'token' => $accessToken,
-            'permissions' => $permissions,
-            'roles' => $roles,
-        ],
-    ];
-}
+        ];
+    }
+
 
     public function logout($user): array
     {

@@ -18,16 +18,16 @@ class AuthController extends Controller
     }
 
     public function login(Request $request): JsonResponse
-    {
-        $credentials = $request->validate([
-            'name' => 'required|string',
-            'password' => 'required|string',
-        ]);
+{
+    $credentials = $request->validate([
+        'name' => 'required|string',
+        'password' => 'required|string',
+    ]);
 
-        $result = $this->authService->login($credentials);
+    $result = $this->authService->login($credentials);
 
-        return response()->json($result, $result['response_code']);
-    }
+    return response()->json($result, $result['response_code']);
+}
 
 
     public function logout(Request $request): JsonResponse
@@ -49,6 +49,9 @@ class AuthController extends Controller
             ], 401);
         }
 
+        // Ambil permissions dari AuthService
+        $permissions = $this->authService->getUserPermissions($user);
+
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -56,49 +59,14 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone,
+                'avatar' => $user->avatar,
                 'address' => $user->address,
-                'roles' => $user->roles ? $user->roles->pluck('name') : [],
                 'created_at' => $user->created_at,
-            ],
-        ], 200);
-    }
-    public function refreshPermissions(Request $request): JsonResponse
-    {
-        $user = Auth::user();
-
-        if (!$user) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Unauthenticated',
-            ], 401);
-        }
-
-        // Ambil data roles dan permissions
-        $permissions = $this->authService->getUserPermissions($user);
-        $roles = $this->authService->getUserRoles($user);
-
-        // Simpan ke session
-        session([
-            'permissions' => $permissions,
-            'roles' => $roles,
-        ]);
-
-        return response()->json([
-            'status' => 'success',
-            'data' => [
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'phone' => $user->phone,
-                    'address' => $user->address,
-                    'avatar' => $user->avatar,
-                    'role_id' => $user->role_id,
-                ],
+                'roles' => $user->roles ? $user->roles->pluck('name') : [],
                 'permissions' => $permissions,
-                'roles' => $roles,
             ],
         ], 200);
     }
+
 
 }

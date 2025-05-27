@@ -2,13 +2,25 @@
 
 namespace App\Repositories;
 
-use App\Models\{Transaction, TransactionDetail, Barang, BarangGudang, Gudang};
+use App\Events\StockMinimumReached;
+use App\Http\Controllers\NotifikasiController;
+use App\Models\{Transaction, TransactionDetail, Barang, BarangGudang, Gudang, Notifikasi};
 use Illuminate\Support\Facades\Auth;
 use Exception;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Request;
 
 class TransactionRepository
 {
+    protected $notifcontroller;
+
+    public function __construct(NotifikasiController $notifcontroller)
+    {
+        $this->notifcontroller = $notifcontroller;
+    }
+
+
+
     public function createTransaction($request)
     {
         $user = Auth::user();
@@ -147,13 +159,22 @@ class TransactionRepository
 
     private function handleBarangKeluar($barangId, $item)
     {
+         DB::transaction(function () use ($barangId, $item) {
         BarangGudang::where('barang_id', $barangId)
             ->where('gudang_id', $item['gudang_id'])
             ->decrement('stok_tersedia', $item['quantity']);
+
+        $barangGudang = BarangGudang::where('barang_id', $barangId)
+            ->where('gudang_id', $item['gudang_id'])
+            ->first();
+
+        $this->notifcontroller->checkStockAndNotify($barangId, $item['gudang_id'], $barangGudang->stok_tersedia);
+    });
     }
 
     private function handlePeminjaman($barangId, $item)
     {
+       DB::transaction(function () use ($barangId, $item) {
         BarangGudang::where('barang_id', $barangId)
             ->where('gudang_id', $item['gudang_id'])
             ->decrement('stok_tersedia', $item['quantity']);
@@ -161,6 +182,13 @@ class TransactionRepository
         BarangGudang::where('barang_id', $barangId)
             ->where('gudang_id', $item['gudang_id'])
             ->increment('stok_dipinjam', $item['quantity']);
+
+        $barangGudang = BarangGudang::where('barang_id', $barangId)
+            ->where('gudang_id', $item['gudang_id'])
+            ->first();
+
+        $this->notifcontroller->checkStockAndNotify($barangId, $item['gudang_id'], $barangGudang->stok_tersedia);
+    });
     }
 
     private function handlePengembalian($barangId, $item)
@@ -178,4 +206,7 @@ class TransactionRepository
     {
         return Barang::where('barang_kode', $kode)->first();
     }
+
+
+
 }

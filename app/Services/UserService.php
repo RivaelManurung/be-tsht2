@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Repositories\UserRepository;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
@@ -35,82 +36,86 @@ class UserService
     }
 
     public function create(array $data)
-    {
-        if (User::where('name', $data['name'])->exists()) {
-            throw new \Exception('Nama sudah digunakan.');
-        }
+{
+    $validator = Validator::make($data, [
+        'name' => 'required|string|max:255|unique:users,name',
+        'password' => [
+            'required',
+            'string',
+            Password::min(8)
+                ->mixedCase()
+                ->letters()
+                ->numbers()
+                ->symbols(),
+            'confirmed'
+        ],
+        'roles' => 'required|array',
+        'roles.*' => 'string|exists:roles,name',
+    ], [
+        'password.required' => 'Password diperlukan.',
+        'password.min' => 'Password harus memiliki minimal 8 karakter.',
+        'password.mixedCase' => 'Password harus mengandung huruf besar dan kecil.',
+        'password.letters' => 'Password harus mengandung huruf.',
+        'password.numbers' => 'Password harus mengandung angka.',
+        'password.symbols' => 'Password harus mengandung simbol.',
+        'password.confirmed' => 'Konfirmasi password tidak cocok.',
+    ]);
 
-        if (User::where('email', $data['email'])->exists()) {
-            throw new \Exception('Email sudah digunakan.');
-        }
+    if ($validator->fails()) {
+        throw new ValidationException($validator);
+    }
+    // Hash password
+    $data['password'] = Hash::make($data['password']);
 
-        $validator = Validator::make($data, [
-            'name' => 'required|string|max:255|unique:users,name',
-            'email' => 'required|email|unique:users,email',
-            'password' => [
-                'required',
-                'string',
-                'min:8',
-                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).+$/',
-                'confirmed'
-            ],
-            'roles' => 'required|array',
-            'roles.*' => 'string|exists:roles,name',
-        ]);
+    // Ambil role pertama dari array dan simpan ke field role_id
+    $role = \Spatie\Permission\Models\Role::where('name', $data['roles'][0])->first();
+    $data['role_id'] = $role ? $role->id : null;
 
-        if ($validator->fails()) {
-            throw new ValidationException($validator);
-        }
+    // Buat user
+    $user = $this->userRepository->create($data);
 
-        $data['password'] = Hash::make($data['password']);
+    // Assign roles ke user
+    $user->syncRoles($data['roles']);
 
-        $user = $this->userRepository->create($data);
-        $user->syncRoles($data['roles']);
+    return $user;
+}
 
-        return $user;
+
+public function update($id, array $data)
+{
+    $user = $this->userRepository->getById($id);
+    if (!$user) {
+        throw new \Exception('User tidak ditemukan');
     }
 
-    public function update($id, array $data)
-    {
-        $user = $this->userRepository->getById($id);
-        if (!$user) {
-            throw new \Exception('User tidak ditemukan');
-        }
-
-        if (isset($data['name']) && User::where('name', $data['name'])->where('id', '!=', $id)->exists()) {
-            throw new \Exception('Nama sudah digunakan.');
-        }
-
-        if (isset($data['email']) && User::where('email', $data['email'])->where('id', '!=', $id)->exists()) {
-            throw new \Exception('Email sudah digunakan.');
-        }
-
-        $validator = Validator::make($data, [
-            'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|email|unique:users,email,' . $id,
-            'phone_number' => 'nullable|string|max:15|unique:users,phone_number,' . $id,
-            'avatar' => 'nullable|string',
-        ]);
-
-        if ($validator->fails()) {
-            throw new ValidationException($validator);
-        }
-
-        if (array_key_exists('avatar', $data) && $data['avatar'] !== null && $data['avatar'] !== '') {
-            if ($user->avatar && $user->avatar !== 'default_avatar.png') {
-                Storage::disk('public')->delete($user->avatar);
-            }
-            $avatarPath = uploadBase64Image($data['avatar'], 'img/profil');
-            $data['avatar'] = $avatarPath;
-        } else {
-            unset($data['avatar']);
-        }
-
-        $this->userRepository->update($user, $data);
-
-        return $this->userRepository->getById($id);
+    if (isset($data['name']) && User::where('name', $data['name'])->where('id', '!=', $id)->exists()) {
+        throw new \Exception('Nama pengguna sudah terdaftar.');
     }
 
+    $validator = Validator::make($data, [
+        'name' => 'sometimes|string|max:255',
+        'phone_number' => 'nullable|digits_between:10,15|unique:users,phone_number,' . $id,
+        'avatar' => 'nullable|string',
+    ]);
+
+    if ($validator->fails()) {
+        throw new ValidationException($validator);
+    }
+
+    if (array_key_exists('avatar', $data) && $data['avatar'] !== null && $data['avatar'] !== '') {
+        if ($user->avatar && $user->avatar !== 'default_avatar.png') {
+            Storage::disk('public')->delete($user->avatar);
+        }
+        $avatarPath = uploadBase64Image($data['avatar'], 'img/profil');
+        $data['avatar'] = $avatarPath;
+    } else {
+        unset($data['avatar']);
+    }
+
+    $this->userRepository->update($user, $data);
+
+    return $this->userRepository->getById($id);
+}
     public function deleteAvatar($id)
     {
         $user = $this->userRepository->getById($id);
@@ -170,4 +175,40 @@ class UserService
 
         return $this->userRepository->delete($user);
     }
+
+
+    public function updateUserByAdmin($id, array $data)
+{
+    $user = $this->userRepository->getById($id);
+    if (!$user) {
+        throw new \Exception('User tidak ditemukan');
+    }
+
+    $validator = Validator::make($data, [
+        'name' => 'required|string|max:255|unique:users,name,' . $id,
+        'password' => [
+            'nullable',
+            'string',
+            Password::min(8)->mixedCase()->letters()->numbers()->symbols(),
+            'confirmed'
+        ],
+        'roles' => 'required|array',
+        'roles.*' => 'string|exists:roles,name',
+    ]);
+
+    if ($validator->fails()) {
+        throw new ValidationException($validator);
+    }
+
+    if (!empty($data['password'])) {
+        $data['password'] = Hash::make($data['password']);
+    } else {
+        unset($data['password']);
+    }
+
+    $this->userRepository->update($user, $data);
+    $user->syncRoles($data['roles']);
+
+    return $user;
+}
 }

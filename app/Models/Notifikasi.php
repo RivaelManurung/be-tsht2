@@ -10,13 +10,21 @@ class Notifikasi extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id',
+        'title',
         'message',
-        'is_read',
+        'read',
+        'barang_id',
+        'gudang_id',
     ];
-    public function user()
+
+    public function barang()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Barang::class);
+    }
+
+    public function gudang()
+    {
+        return $this->belongsTo(Gudang::class);
     }
 
 }

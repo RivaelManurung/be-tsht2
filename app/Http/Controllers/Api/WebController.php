@@ -20,7 +20,7 @@ class WebController extends Controller
         $this->service = $service;
     }
 
-   // App\Http\Controllers\Api\WebController.php
+    // App\Http\Controllers\Api\WebController.php
 
 public function index()
 {
@@ -29,9 +29,12 @@ public function index()
 
 public function show($id)
 {
+    if ((int)$id !== 1) {
+        return response()->json(['message' => 'Data Tidak Ada.'], 404);
+    }
+
     return new WebResource($this->service->getById($id));
 }
-
 public function update(Request $request, $id)
 {
     $request->validate([
@@ -48,9 +51,9 @@ public function update(Request $request, $id)
         $data['web_logo'] = $this->replaceImage($web->web_logo, $request->web_logo);
     }
 
-    $web = $this->service->update($id, $data);
-    return new WebResource($web);
-}
+        $web = $this->service->update($id, $data);
+        return new WebResource($web);
+    }
 
 
     private function handleImageUpload($base64Image)
