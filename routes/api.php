@@ -53,8 +53,6 @@ Route::middleware(['auth:api'])->group(function () {
 
     Route::apiResource('satuans', SatuanController::class);
 
-    Route::get('/notifikasis', [NotifikasiController::class, 'index']);
-    Route::post('/notifikasis/{id}/read', [NotifikasiController::class, 'markAsRead']);
 
     Route::apiResource('barang-categories', BarangCategoryController::class);
 
@@ -127,8 +125,8 @@ Route::post('/email/resend', function (Request $request) {
     $user->forceFill(['email' => $pendingEmail])
          ->sendEmailVerificationNotification();
 
-    return response()->json(['message' => 'Link verifikasi telah dikirim ulang ke email baru.']);
-})->middleware(['auth:api']);
+         return response()->json(['message' => 'Link verifikasi telah dikirim ulang ke email baru.']);
+        })->middleware(['auth:api']);
 
 
 // Link verifikasi yang diklik di email
@@ -160,16 +158,9 @@ Route::get('/email/verify/{id}/{hash}', function (Request $request, $id, $hash) 
 Route::put('/user/update-email', [UserController::class, 'updateEmail'])->middleware(['auth:api']);
 
 
-Route::get('/test-broadcast', function () {
-    event(new StockMinimumReached(
-        "Stok Minimum Test",
-        "Ini adalah notifikasi uji coba realtime!",
-        1,
-        1
-    ));
-
-    return "Notifikasi realtime dikirim!";
-});
 
 //memastikan cek role login
 Route::middleware(['auth:api'])->get('/check-roles', [UserController::class, 'checkRoles']);
+
+Route::get('/notifikasis', [NotifikasiController::class, 'index']);
+Route::post('/notifikasis/{id}/read', [NotifikasiController::class, 'markAsRead']);
