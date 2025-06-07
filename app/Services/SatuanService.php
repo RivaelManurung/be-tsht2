@@ -2,13 +2,15 @@
 
 namespace App\Services;
 
+use App\Events\SatuanCreated;
+use App\Events\SatuanUpdated;
+use App\Events\SatuanDeleted;
 use App\Models\Satuan;
 use App\Repositories\SatuanRepository;
 use Illuminate\Support\Str;
 
 class SatuanService
 {
-
     protected $satuanRepository;
 
     public function __construct(SatuanRepository $satuanRepository)
@@ -37,20 +39,22 @@ class SatuanService
         $validatedData['slug'] = Str::slug($validatedData['name']);
         $validatedData['user_id'] = auth()->id();
 
-        return $this->satuanRepository->create($validatedData);
+        $satuan = $this->satuanRepository->create($validatedData);
+        event(new SatuanCreated($satuan));
+
+        return $satuan;
     }
 
     public function update($id, array $data)
     {
-        // Panggil update di repository dan masukkan id dan data
         $validatedData = $this->validateData($data, $id);
         $validatedData['slug'] = Str::slug($validatedData['name']);
         $validatedData['user_id'] = auth()->id();
 
+        $satuan = $this->satuanRepository->update($id, $validatedData);
+        event(new SatuanUpdated($satuan));
 
-
-
-        return $this->satuanRepository->update($id, $validatedData);
+        return $satuan;
     }
 
     public function delete($id)
@@ -60,12 +64,20 @@ class SatuanService
         if (!$satuan) {
             throw new \Exception('Satuan not found');
         }
-        return $this->satuanRepository->delete($satuan);
+
+        $this->satuanRepository->delete($satuan);
+        event(new SatuanDeleted($id));
+
+        return true;
     }
 
     public function restore($id)
     {
-        return $this->satuanRepository->restore($id);
+        $satuan = $this->satuanRepository->restore($id);
+        if ($satuan) {
+            event(new SatuanCreated($satuan)); // Trigger created event on restore
+        }
+        return $satuan;
     }
 
     private function validateData(array $data, $id = null)

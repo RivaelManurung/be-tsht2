@@ -12,15 +12,15 @@ class AuthRepository
         return User::where('email', $email)->first();
     }
 
+    public function findUserByName(string $name): ?User
+    {
+        return User::where('name', $name)->first();
+    }
+
     public function createToken(User $user): string
     {
         return $user->createToken('authToken')->accessToken;
     }
-    public function findUserByName(string $name): ?User
-{
-    return User::where('name', $name)->first();
-}
-
 
     public function getUserPermissions(User $user): \Illuminate\Support\Collection
     {

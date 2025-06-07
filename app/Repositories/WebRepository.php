@@ -13,7 +13,7 @@ class WebRepository
 
     public function findById($id)
     {
-        return Web::findOrFail($id);
+        return Web::findOrFail($id); // Removed eager loading unless needed
     }
 
     public function create(array $data)

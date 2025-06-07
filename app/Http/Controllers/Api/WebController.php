@@ -8,7 +8,6 @@ use App\Services\WebService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Melihovv\Base64ImageDecoder\Base64ImageDecoder;
 
 class WebController extends Controller
@@ -20,41 +19,64 @@ class WebController extends Controller
         $this->service = $service;
     }
 
-    // App\Http\Controllers\Api\WebController.php
-
-public function index()
-{
-    return WebResource::collection($this->service->getAll());
-}
-
-public function show($id)
-{
-    if ((int)$id !== 1) {
-        return response()->json(['message' => 'Data Tidak Ada.'], 404);
+    public function index()
+    {
+        return response()->json([
+            'success' => true,
+            'message' => 'Web settings list retrieved successfully',
+            'data' => WebResource::collection($this->service->getAll()),
+        ], 200);
     }
 
-    return new WebResource($this->service->getById($id));
-}
-public function update(Request $request, $id)
-{
-    $request->validate([
-        'web_nama' => 'sometimes|required|string|max:255',
-        'web_deskripsi' => 'nullable|string',
-        'web_logo' => 'nullable|string',
-    ]);
-
-    $web = $this->service->getById($id);
-    $data = $request->only(['web_nama', 'web_deskripsi']);
-    $data['user_id'] = Auth::id();
-
-    if ($request->has('web_logo')) {
-        $data['web_logo'] = $this->replaceImage($web->web_logo, $request->web_logo);
+    public function show($id)
+    {
+        try {
+            $web = $this->service->getById($id);
+            return response()->json([
+                'success' => true,
+                'message' => 'Web settings retrieved successfully',
+                'data' => new WebResource($web),
+            ], 200, [
+                'Cache-Control' => 'public, max-age=3600', // Hint to cache for 1 hour
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data Tidak Ada.',
+            ], 404);
+        }
     }
 
-        $web = $this->service->update($id, $data);
-        return new WebResource($web);
-    }
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'web_nama' => 'sometimes|required|string|max:255',
+            'web_deskripsi' => 'nullable|string',
+            'web_logo' => 'nullable|string',
+        ]);
 
+        try {
+            $web = $this->service->getById($id);
+            $data = $request->only(['web_nama', 'web_deskripsi']);
+            $data['user_id'] = Auth::id();
+
+            if ($request->has('web_logo')) {
+                $data['web_logo'] = $this->replaceImage($web->web_logo, $request->web_logo);
+            }
+
+            $updatedWeb = $this->service->update($id, $data);
+            return response()->json([
+                'success' => true,
+                'message' => 'Web settings updated successfully',
+                'data' => new WebResource($updatedWeb),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
 
     private function handleImageUpload($base64Image)
     {

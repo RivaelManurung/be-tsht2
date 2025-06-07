@@ -9,3 +9,13 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 Broadcast::channel('stock-channel', function () {
     return true;  // Mengizinkan semua pengguna untuk mendengarkan channel ini
 });
+
+Broadcast::channel('barang-categories', function () {
+    return true;  // Mengizinkan semua pengguna untuk mendengarkan channel ini
+});
+
+Broadcast::channel('satuans', function () {
+    return true;  // Mengizinkan semua pengguna untuk mendengarkan channel ini
+});
+
+

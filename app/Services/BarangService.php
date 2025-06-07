@@ -22,9 +22,9 @@ class BarangService
     }
 
     public function getAllBarang($userId = null, $isSuperadmin = false, $isAdmin = false)
-{
-    return $this->barangRepository->getAll($userId, $isSuperadmin, $isAdmin);
-}
+    {
+        return $this->barangRepository->getAll($userId, $isSuperadmin, $isAdmin);
+    }
 
 
     public function getBarangById($id)

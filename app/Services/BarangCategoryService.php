@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+use App\Events\BarangCategoryCreated;
+use App\Events\BarangCategoryUpdated;
+use App\Events\BarangCategoryDeleted;
 use App\Repositories\BarangCategoryRepository;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -41,7 +44,10 @@ class BarangCategoryService
 
         $data['slug'] = Str::slug($data['name']);
 
-        return $this->barangCategoryRepository->create($data);
+        $barangCategory = $this->barangCategoryRepository->create($data);
+        event(new BarangCategoryCreated($barangCategory));
+
+        return $barangCategory;
     }
 
     public function update($id, array $data)
@@ -62,6 +68,7 @@ class BarangCategoryService
         $data['slug'] = Str::slug($data['name']);
 
         $this->barangCategoryRepository->update($barangCategory, $data);
+        event(new BarangCategoryUpdated($barangCategory));
 
         return $barangCategory;
     }
@@ -73,6 +80,9 @@ class BarangCategoryService
             throw new \Exception('Kategori barang tidak ditemukan');
         }
 
-        return $this->barangCategoryRepository->delete($barangCategory);
+        $this->barangCategoryRepository->delete($barangCategory);
+        event(new BarangCategoryDeleted($id));
+
+        return true;
     }
 }

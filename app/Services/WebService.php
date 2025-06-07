@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Repositories\WebRepository;
+use Illuminate\Support\Facades\Cache;
 
 class WebService
 {
@@ -15,28 +16,39 @@ class WebService
 
     public function getAll()
     {
-        return $this->repository->getAll();
+        return Cache::remember('webs_all', 3600, function () {
+            return $this->repository->getAll();
+        });
     }
 
     public function getById($id)
     {
-        return $this->repository->findById($id);
+        return Cache::remember("web_{$id}", 3600, function () use ($id) {
+            return $this->repository->findById($id);
+        });
     }
 
     public function create(array $data)
     {
-        return $this->repository->create($data);
+        $web = $this->repository->create($data);
+        Cache::forget('webs_all');
+        return $web;
     }
 
     public function update($id, array $data)
     {
         $web = $this->repository->findById($id);
-        return $this->repository->update($web, $data);
+        $updatedWeb = $this->repository->update($web, $data);
+        Cache::forget("web_{$id}");
+        Cache::forget('webs_all');
+        return $updatedWeb;
     }
 
     public function delete($id)
     {
         $web = $this->repository->findById($id);
-        return $this->repository->delete($web);
+        $this->repository->delete($web);
+        Cache::forget("web_{$id}");
+        Cache::forget('webs_all');
     }
 }
