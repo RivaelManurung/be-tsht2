@@ -30,7 +30,7 @@ Route::prefix('auth')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
         Route::get('refresh-permission', [AuthController::class, 'refreshPermissions']);
 
-        Route::get('update-profile', [AuthController::class , 'updateprofil']);
+        Route::get('update-profile', [AuthController::class, 'updateprofil']);
         Route::get('user', [AuthController::class, 'userInfo'])->name('auth.user');
     });
 });
@@ -61,7 +61,7 @@ Route::middleware(['auth:api'])->group(function () {
     //route laporan
     Route::get('laporantransaksi', [LaporanController::class, 'laporantransaksi']);
     Route::get('/laporan-transaksi/export-pdf', [LaporanController::class, 'generateTransaksiReportPdf'])->name('transactions.exportPdf');
-    Route::get('/laporan-transaksi/export-pdf/{typeId}',[LaporanController::class, 'generateTransaksiTypeReportPdf'])->middleware('auth:api');
+    Route::get('/laporan-transaksi/export-pdf/{typeId}', [LaporanController::class, 'generateTransaksiTypeReportPdf'])->middleware('auth:api');
     Route::get('/laporan-transaksi/export-excel/{id}', [LaporanController::class, 'generateTransaksiTypeReportexcel']);
     Route::get('/laporan-transaksi/export-excel', [LaporanController::class, 'generateAllTransaksiexcel']);
 
@@ -72,6 +72,7 @@ Route::middleware(['auth:api'])->group(function () {
     // routes/api.php
     Route::get('transactions/check-barcode/{kode}', [TransactionController::class, 'checkBarcode']);
     Route::apiResource('transactions', TransactionController::class);
+    Route::post('transactions/update-barang-details', [TransactionController::class, 'updateBarangDetails']); // New endpoint for stock/name updates
 
     Route::apiResource('jenis-barangs', JenisBarangController::class);
     Route::patch('jenis-barang/{id}/restore', [JenisBarangController::class, 'restore']);
@@ -123,10 +124,10 @@ Route::post('/email/resend', function (Request $request) {
     Cache::put($cacheKey, now(), 61);
 
     $user->forceFill(['email' => $pendingEmail])
-         ->sendEmailVerificationNotification();
+        ->sendEmailVerificationNotification();
 
-         return response()->json(['message' => 'Link verifikasi telah dikirim ulang ke email baru.']);
-        })->middleware(['auth:api']);
+    return response()->json(['message' => 'Link verifikasi telah dikirim ulang ke email baru.']);
+})->middleware(['auth:api']);
 
 
 // Link verifikasi yang diklik di email

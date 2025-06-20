@@ -16,7 +16,6 @@ class BarangController extends Controller implements HasMiddleware
     {
         return [
             'auth:api',
-
             new Middleware('permission:view_barang', only: ['index']),
             new Middleware('permission:create_barang', only: ['store']),
             new Middleware('permission:update_barang', only: ['update']),
@@ -28,6 +27,7 @@ class BarangController extends Controller implements HasMiddleware
     {
         $this->barangService = $barangService;
     }
+
 
     public function index()
     {
@@ -42,7 +42,6 @@ class BarangController extends Controller implements HasMiddleware
 
         return BarangResource::collection($barangs);
     }
-
 
     public function store(Request $request)
     {
@@ -59,7 +58,6 @@ class BarangController extends Controller implements HasMiddleware
             return response()->json(['message' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
         }
     }
-
 
     public function show($id)
     {

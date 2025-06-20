@@ -123,4 +123,3 @@ class GudangController extends Controller implements HasMiddleware
             : response()->json(['message' => 'Gudang tidak ditemukan'], 404);
     }
 }
-
